@@ -1,3 +1,9 @@
 *.pyc
 *~
 .ipynb_checkpoints
+
+paper/neurips_2019.aux
+paper/neurips_2019.log
+paper/neurips_2019.out
+paper/neurips_2019.pdf
+paper/neurips_2019.synctex.gz
