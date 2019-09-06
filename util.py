@@ -1,0 +1,153 @@
+import torch
+import numpy as np
+from matplotlib import pylab as plt
+
+problems = ['burgers','KdV','heat','wave']
+
+#
+# Networks we're evaluating
+#
+class PureStencil(torch.nn.Module):
+    def __init__(self, Nx, width=3):
+        super(PureStencil,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Conv1d(1,1,width,bias=False),
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+class DeepStencil(torch.nn.Module):
+    def __init__(self,Nx,width=3):
+        super(DeepStencil,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Conv1d(1,15,width),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(15,15,1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(15,15,1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(15,1,1)
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+class FCMLP(torch.nn.Module):
+    def __init__(self, Nx):
+        super(FCMLP,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(Nx,100),
+            torch.nn.ReLU(),
+            torch.nn.Linear(100,100),
+            torch.nn.ReLU(),
+            torch.nn.Linear(100,100),
+            torch.nn.ReLU(),
+            torch.nn.Linear(100,Nx-2)
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+class AutoencoderFC(torch.nn.Module):
+    def __init__(self, Nx):
+        super(AutoencoderFC,self).__init__()
+        self.net = torch.nn.Sequential(
+            
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+class AutoencoderConv(torch.nn.Module):
+    def __init__(self, Nx):
+        super(AutoencoderConv,self).__init__()
+        self.net = torch.nn.Sequential(
+            
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+class DiscriminatorFC(torch.nn.Module):
+    def __init__(self, Nx, width):
+        super(Adversary,self).__init__()
+        net = torch.nn.Sequential(
+            torch.nn.Linear(Nx,100)
+            torch.nn.ReLU(),
+            torch.nn.Linear(100,50)
+            torch.nn.ReLU(),
+            torch.nn.Linear(50,20)
+            torch.nn.ReLU(),
+            torch.nn.Linear(20,10)
+            torch.nn.ReLU(),
+            torch.nn.Linear(10,1)
+            torch.nn.ReLU(),
+        )
+        self.net = torch.nn.sigmoid(net)
+    def forward(self,x):
+        return self.net(x)
+    
+class DiscriminatorConv(torch.nn.Module):
+    def __init__(self, Nx, width):
+        super(Adversary,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Conv1d(1,5,width)
+            torch.nn.ReLU(),
+            torch.nn.AvgPool1D(2),
+            
+            torch.nn.Conv1d(5,5,width)
+            torch.nn.ReLU(),
+            torch.nn.AvgPool1D(2),
+            torch.nn.Conv1d(5,5,width)
+            torch.nn.ReLU(),
+            torch.nn.AvgPool1D(2),
+        )
+    def forward(self,x):
+        return self.net(x)
+    
+models = {"PureStencil":PureStencil,
+         "DeepStencil":DeepStencil,
+         "FCMLP":FCMLP}
+#
+# Training Utilities
+#
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def select_batch_idcs(num, Ntraj,Nt, Npast=1,Nfuture=1):
+    ii = torch.LongTensor([(np.random.choice(Ntraj),
+                            np.random.choice(Nt-Npast-Nfuture+1))
+                            for _ in range(num)])
+    return ii
+
+def get_batch(num, dataset, Npast=1, Nfuture=1):
+    Ntraj,Nt,Nx = dataset.shape
+    ii = select_batch_idcs(num, Ntraj,Nt)
+    xx = torch.cat([dataset[j,(t-Npast+1):(t+1),:].unsqueeze(0) for j,t in ii])
+    yy = torch.cat([dataset[j,(t+1):(t+Nfuture+1),:].unsqueeze(0) for j,t in ii])
+    return xx,yy
+
+#
+# Evaluation Utilities
+#
+def do_a_path(model, dataset, samp):
+    u0 = dataset[samp,(0,),:]
+    u0 = u0.reshape((1,1,dataset.shape[-1]))
+    #u0 = torch.tensor(u0,dtype=torch.float32)
+    plt.figure()
+    plt.plot(u0.cpu().numpy().flatten())
+    try:
+        Npast = model.Npast
+    except:
+        Npast = 1
+    Nstep = dataset.shape[1]-Npast
+    Nplot = Nstep//10
+    errors = np.zeros((Nstep,))
+    with torch.no_grad():
+        for i in range(Nstep):
+            uN = model(u0)
+            u0[:,:,1:-1] += uN
+            errors[i] = np.linalg.norm(u0.cpu().numpy().ravel() -
+                                       dataset[samp,i+1,:].cpu().numpy().ravel())
+            if i%Nplot==Nplot-1:
+                plt.plot(u0.cpu().numpy().flatten())
+                plt.plot(dataset[samp,i+1,:].cpu().numpy().flatten(),'--')
+    plt.show()
+    return errors
+    
