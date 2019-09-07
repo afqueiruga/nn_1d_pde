@@ -14,7 +14,7 @@ class PureStencil(torch.nn.Module):
             torch.nn.Conv1d(1,1,width,bias=False),
         )
     def forward(self,x):
-        return self.net(x)
+        return torch.nn.functional.pad(self.net(x),(1,1))
     
 class DeepStencil(torch.nn.Module):
     def __init__(self,Nx,width=3):
@@ -29,7 +29,7 @@ class DeepStencil(torch.nn.Module):
             torch.nn.Conv1d(15,1,1)
         )
     def forward(self,x):
-        return self.net(x)
+        return torch.nn.functional.pad(self.net(x),(1,1))
     
 class FCMLP(torch.nn.Module):
     def __init__(self, Nx):
@@ -44,7 +44,7 @@ class FCMLP(torch.nn.Module):
             torch.nn.Linear(100,Nx-2)
         )
     def forward(self,x):
-        return self.net(x)
+        return torch.nn.functional.pad(self.net(x),(1,1))
     
 class AutoencoderFC(torch.nn.Module):
     def __init__(self, Nx):
@@ -66,38 +66,38 @@ class AutoencoderConv(torch.nn.Module):
     
 class DiscriminatorFC(torch.nn.Module):
     def __init__(self, Nx, width):
-        super(Adversary,self).__init__()
-        net = torch.nn.Sequential(
-            torch.nn.Linear(Nx,100)
+        super(DiscriminatorFC,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(Nx,100),
             torch.nn.ReLU(),
-            torch.nn.Linear(100,50)
+            torch.nn.Linear(100,50),
             torch.nn.ReLU(),
-            torch.nn.Linear(50,20)
+            torch.nn.Linear(50,20),
             torch.nn.ReLU(),
-            torch.nn.Linear(20,10)
+            torch.nn.Linear(20,10),
             torch.nn.ReLU(),
-            torch.nn.Linear(10,1)
-            torch.nn.ReLU(),
+            torch.nn.Linear(10,1),
+            torch.nn.Sigmoid(),
         )
-        self.net = torch.nn.sigmoid(net)
     def forward(self,x):
         return self.net(x)
     
 class DiscriminatorConv(torch.nn.Module):
     def __init__(self, Nx, width):
-        super(Adversary,self).__init__()
+        super(DiscriminatorConv,self).__init__()
         self.net = torch.nn.Sequential(
-            torch.nn.Conv1d(1,5,width)
-            torch.nn.ReLU(),
-            torch.nn.AvgPool1D(2),
-            
-            torch.nn.Conv1d(5,5,width)
-            torch.nn.ReLU(),
-            torch.nn.AvgPool1D(2),
-            torch.nn.Conv1d(5,5,width)
-            torch.nn.ReLU(),
-            torch.nn.AvgPool1D(2),
+            torch.nn.Conv1d(1,5,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AvgPool1d(2),
+            torch.nn.Conv1d(5,5,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AdaptiveAvgPool1d(16),
+            torch.nn.Conv1d(5,1,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AdaptiveAvgPool1d(1),
+            torch.nn.Sigmoid(),
         )
+        
     def forward(self,x):
         return self.net(x)
     
@@ -142,12 +142,13 @@ def do_a_path(model, dataset, samp):
     with torch.no_grad():
         for i in range(Nstep):
             uN = model(u0)
-            u0[:,:,1:-1] += uN
-            errors[i] = np.linalg.norm(u0.cpu().numpy().ravel() -
-                                       dataset[samp,i+1,:].cpu().numpy().ravel())
+            u0 += uN
+            ucpu = u0.cpu().numpy().ravel()
+            dcpu = dataset[samp,i+1,:].cpu().numpy().ravel()
+            errors[i] = np.linalg.norm((ucpu - dcpu)/(np.abs(dcpu)+1.0e-5))
             if i%Nplot==Nplot-1:
-                plt.plot(u0.cpu().numpy().flatten())
-                plt.plot(dataset[samp,i+1,:].cpu().numpy().flatten(),'--')
+                plt.plot(ucpu)
+                plt.plot(dcpu,'--')
     plt.show()
     return errors
     
