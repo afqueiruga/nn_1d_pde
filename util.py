@@ -82,6 +82,7 @@ class DiscriminatorFC(torch.nn.Module):
     def forward(self,x):
         return self.net(x)
     
+    
 class DiscriminatorConv(torch.nn.Module):
     def __init__(self, Nx, width):
         super(DiscriminatorConv,self).__init__()
@@ -100,6 +101,25 @@ class DiscriminatorConv(torch.nn.Module):
         
     def forward(self,x):
         return self.net(x)
+    
+class ConditionalDiscriminatorConv(torch.nn.Module):
+    def __init__(self, Nx, width):
+        super(ConditionalDiscriminatorConv,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Conv1d(2,5,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AvgPool1d(2),
+            torch.nn.Conv1d(5,5,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AdaptiveAvgPool1d(16),
+            torch.nn.Conv1d(5,1,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.AdaptiveAvgPool1d(1),
+            torch.nn.Sigmoid(),
+        )
+        
+    def forward(self,x,y):
+        return self.net( torch.cat((x,y),dim=1) )
     
 models = {"PureStencil":PureStencil,
          "DeepStencil":DeepStencil,
@@ -126,7 +146,7 @@ def get_batch(num, dataset, Npast=1, Nfuture=1):
 #
 # Evaluation Utilities
 #
-def do_a_path(model, dataset, samp):
+def do_a_path(model, dataset, samp, Nstep=-1):
     u0 = dataset[samp,(0,),:]
     u0 = u0.reshape((1,1,dataset.shape[-1]))
     #u0 = torch.tensor(u0,dtype=torch.float32)
@@ -136,7 +156,8 @@ def do_a_path(model, dataset, samp):
         Npast = model.Npast
     except:
         Npast = 1
-    Nstep = dataset.shape[1]-Npast
+    if Nstep <= 0:
+        Nstep = dataset.shape[1]-Npast
     Nplot = Nstep//10
     errors = np.zeros((Nstep,))
     with torch.no_grad():
