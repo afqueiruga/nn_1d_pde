@@ -50,24 +50,69 @@
 
 \begin{abstract}
   This work performs a thorough empirical analysis of the application
-  of neural networks to solving well understood aprtial differential
-  equations.
+  of neural networks to solving well understood partial differential
+  equations. Only one spatial dimension is treated to , where pentiful analytical solutions can be evaluated to machine precision to provide datasets with no artifacts.
   Burger's equation and the Korteweg-de Vries equation are treated,
-  which even in their 1D form are challenging to solve numerically due
-  to their nonlinearity and exhibition of shock fronts.
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
-  both the left- and right-hand margins. Use 10~point type, with a vertical
-  spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
-  bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph.
+  which even are challenging to solve numerically due
+  to their nonlinearity and exhibition of shock fronts even in one spatial dimension.
 \end{abstract}
 
 \section{Introduction}
 
+Hypotheses:
+\begin{enumerate}
+  \item Adding adverserial training will improve stability
+  \item need 2 history for wave equation
+  \item AE will be bad
+    \item need a unet or FC to do heat eq
+\end{enumerate}
+
+Most extremely challanging physical systems are extremely challenging to describe due to unknown underlying physics or intractable complexities with traditional approaches. Analysis of dynamics data through neural networks and deep learning is a hot topic and very promising approach to learn predictive tools, but the properties are not yet well understood. The problem of discovering dynamics can be stated as follows:
+\begin{equation}
+\textrm{Given data }\, u(x_i,t_k), \,\textrm{find }f\textrm{ such that }\, u^{k+1}=f(u^k)
+\end{equation}
+This paper seeks to explore the use of neural networks as an $f$ to discover predictive functions on well known equations (for which decent $f$s are already known.)
+Basic one dimensional partial differential equations are always useful to benchmark to any new numerical technique due to well understood properties and known analytical solutions, which can provide as much data as needed without artifacts from synthesis or acquisition.
 Multiple standard types of architectures are applied to each of these
 canonical equations.
+The experiments are designed to take a few minutes of compute time training to replicate with datasets that even fit within a modern cache.
+Applying intuition from well understood physics-and-math-up approaches will improve future approaches, providing insights that can hopefully be applied to problems without known physical descriptions but similarities to canonical problems.
 
-The experiments are designed to take a few minutes of compute time training to replicate.
+
+
+
+\begin{equation}
+  u^{k+1}_{i} = \mathtt{stencil}\left( u^k_{i-1}, u^k_{i},u^{k}_{i+1}\right)
+\end{equation}
+This architecture corresponds to a fringe case neural network: a 3-weight 1D convolutional network with no activation function. Below, it is shown that the standard ADAM optimizer will discover this stencil, albeit slowly.
+These architectures are called ``PureStencil'' and ``PureLinear''.
+
+The equations in this investigation are summarized in Table \ref{tab:pdes}. (Technically, all but one are actually 2D when including time.)
+Poisson's equation, the heat equation, a linear parabolic equation,
+
+The Wave Equation, a linear hyperbolic equation
+
+  Burgers' equation, a conservative nonlinear equation known for
+  producing sharp fronts,
+
+The Korteweg-de Vries Equation equation, a conservative nonlinear equation known for
+  producing sharp fronts,
+
+\begin{table}
+  \caption{\label{tab:pdes}PDEs under investigation}
+  \begin{tabular}{lll}
+    \hline
+    Name & Equation & Properties\\
+    \hline\hline
+    Poisson Equation & $u_{xx} = f $ & Linear, elliptic, static \\\hline\
+    Heat Equation & $u_{t} = k u_{xx} $ & Linear, parabolic \\\hline
+    Wave Equation & $u_{tt} = c^2 u_{xx} $ & Linear, hyperbolic\\\hline
+    Advection Equation & $u_{t} + a u_x = 0 $ & Linear, hyperbolic\\\hline
+    Burgers' Equation & $u_{t} + u_x u = 0 $ & Conservative, nonlinear, known for shock waves \\\hline
+    Viscous Burgers' Equation & $u_{t} + u_x u = \nu u_{xx} $ & Conservative, nonlinear, shock waves \\\hline
+    Korteweg-de Vries Equation & $\partial_t u + 6 u \partial_x u + \partial_{xxx}u = 0$ & Conservative, Nonlinear \\\hline
+  \end{tabular}
+\end{table}
 
 Boundary conditions are neglected for this investigation. When
 performing recurrent prediction, the values at the edges of the domain are set to
@@ -76,177 +121,64 @@ boundaries do not contaminate the results, yielding pure Dirrichlet
 boundary conditions every. The boundary domain is extended to the
 sencil width.
 
+A dataset is created for each equation where 10 trajectories are solved analytically and evaluated on a grid of 41 points in x and 50 snapshots in $t$. The analytical solutions and their implementations can be found in the accompanying source code.
+
+\begin{table}
+  \caption{\label{tab:network}Network Architectures Used}
+  \begin{tabular}{lcc}
+    \toprule
+    Name & Description & No. of Parameters \\
+    \midrule
+    FC & & \\
+    Linear Conv & & 3 \\
+    Pure-ConvMLP & &  \\
+    Autoencoder & & \\
+    U-Net & &  \\
+    Recurrent & & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Question: Do we want to learn $u^{k+1}$ or $\Delta u^{k+1}$?
+The paper THAT ONE ABOUT RESNET showed a technique to describe residual networks as iterative time stepping methods to improve training. The effect on training is tried by adding a skip connection to all of the models--- $f(x)=\mathbf{net}(x)+x$---so that $\mathbf{net}$ learns the rate. This would further allow changing $\Delta t$ or generalize to other time integration schemes, but this was not explored.
+
+The time frequency of snapshots used for training will affect training.
+Recall the Courant–Friedrichs–Lewy (CFL) condition dictating the ratio
+of spatial and temporal discretization spacings to ensure stability
+for explicit schemes: $\delta t / \delta x < C$ or $\delta t / \delta
+x^2<C$ for some positive $C$.
+
 \begin{equation}
-  u^{k+1}_{i} = \mathtt{stencil}\left( u^k_{i-1}, u^k_{i},u^{k}_{i+1}\right)
+L\left(u^k,u^{k+1}\right) = \left| u^{k+1}_i-f(u^k) \right|
 \end{equation}
-    
-The Poisson Equation, a linear elliptic equation,
+
+This effects the network architecture:
 \begin{equation}
-u_{xx} = f
+L\left(\left\{u^k,u^{k-1}...u^{k-P}\right\},u^{k+1}\right) = \left| u^{k+1}_i-f(u^k,...u^{k-P}) \right|
 \end{equation}
-The Heat Equation, a linear parabolic equation,
+
+This does not effect the network architecture:
 \begin{equation}
-u_{xx} = u_t
+L\left(u^k,\left\{u^{k+1},u^{k+2}...\right\}\right) = \\ \left| u^{k+1}-f(u^k) \right| + \lambda_1  \left| u^{k+2}-f \circ f(u^k) \right| + \lambda_2  \left| u^{k+3}-f \circ f \circ f(u^k) \right| + ...
 \end{equation}
-  The Wave Equation, a linear hyperbolic equation
+
+Adverserial training is also considered, where
+A conditional discriminator $D(y|x)$ is optimized which learns, given $x$, determine if $y$ is the datum or the model prediction. 
+
 \begin{equation}
-u_{xx} = u_{tt}
+\mathbb{E}_x\left[ 1 - D\left(f(x)|x\right) \right] + \mathbb{E}_y\left[ D\left(y|x\right)\right]
 \end{equation}
+For these problems, no stochastic effects are included, and the model and evaluation of the discrimanor are perfectly deterministic. Thus, the inclusion of adverserial is essentially {\em learning a loss function}, replacing the mean-squared-error loss with potentially something better.
 
-  Burger's equation, a conservative nonlinear equation known for
-  producing sharp fronts,
-  \begin{equation}
-u_{xx} = u_{tt}
-\end{equation}
+\section{Implementation Details}
 
-  The Korteweg-de Vries Equation equation, a conservative nonlinear equation known for
-  producing sharp fronts,
-  \begin{equation}
-u_{xx} = u_{tt}
-\end{equation}
+The datasets were created using Sympy and the entire study is implemented in PyTorch. The experiments were designed to run in a few minutes each, and were executed using a GPU instance Google Colaboratory. The source code and datasets can be found at {\em redacted to preserve blind review.}
 
-  
-\subsection{Retrieval of style files}
 
-The style files for NeurIPS and other conference information are available on
-the World Wide Web at
-\begin{center}
-  \url{http://www.neurips.cc/}
-\end{center}
-The file \verb+neurips_2019.pdf+ contains these instructions and illustrates the
-various formatting requirements your NeurIPS paper must satisfy.
+\section{Conclusion}
+\label{sec:conclusion}
 
-The only supported style file for NeurIPS 2019 is \verb+neurips_2019.sty+,
-rewritten for \LaTeXe{}.  \textbf{Previous style files for \LaTeX{} 2.09,
-  Microsoft Word, and RTF are no longer supported!}
-
-The \LaTeX{} style file contains three optional arguments: \verb+final+, which
-creates a camera-ready copy, \verb+preprint+, which creates a preprint for
-submission to, e.g., arXiv, and \verb+nonatbib+, which will not load the
-\verb+natbib+ package for you in case of package clash.
-
-\paragraph{Preprint option}
-If you wish to post a preprint of your work online, e.g., on arXiv, using the
-NeurIPS style, please use the \verb+preprint+ option. This will create a
-nonanonymized version of your work with the text ``Preprint. Work in progress.''
-in the footer. This version may be distributed as you see fit. Please \textbf{do
-  not} use the \verb+final+ option, which should \textbf{only} be used for
-papers accepted to NeurIPS.
-
-At submission time, please omit the \verb+final+ and \verb+preprint+
-options. This will anonymize your submission and add line numbers to aid
-review. Please do \emph{not} refer to these line numbers in your paper as they
-will be removed during generation of camera-ready copies.
-
-The file \verb+neurips_2019.tex+ may be used as a ``shell'' for writing your
-paper. All you have to do is replace the author, title, abstract, and text of
-the paper with your own.
-
-The formatting instructions contained in these style files are summarized in
-Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
-
-\section{General formatting instructions}
-\label{gen_inst}
-
-The text must be confined within a rectangle 5.5~inches (33~picas) wide and
-9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).  Use 10~point
-type with a vertical spacing (leading) of 11~points.  Times New Roman is the
-preferred typeface throughout, and will be selected for you by default.
-Paragraphs are separated by \nicefrac{1}{2}~line space (5.5 points), with no
-indentation.
-
-The paper title should be 17~point, initial caps/lower case, bold, centered
-between two horizontal rules. The top rule should be 4~points thick and the
-bottom rule should be 1~point thick. Allow \nicefrac{1}{4}~inch space above and
-below the title to rules. All pages should start at 1~inch (6~picas) from the
-top of the page.
-
-For the final version, authors' names are set in boldface, and each name is
-centered above the corresponding address. The lead author's name is to be listed
-first (left-most), and the co-authors' names (if different address) are set to
-follow. If there is only one co-author, list both author and co-author side by
-side.
-
-Please pay special attention to the instructions in Section \ref{others}
-regarding figures, tables, acknowledgments, and references.
-
-\section{Headings: first level}
-\label{headings}
-
-All headings should be lower case (except for first word and proper nouns),
-flush left, and bold.
-
-First-level headings should be in 12-point type.
-
-\subsection{Headings: second level}
-
-Second-level headings should be in 10-point type.
-
-\subsubsection{Headings: third level}
-
-Third-level headings should be in 10-point type.
-
-\paragraph{Paragraphs}
-
-There is also a \verb+\paragraph+ command available, which sets the heading in
-bold, flush left, and inline with the text, with the heading followed by 1\,em
-of space.
-
-\section{Citations, figures, tables, references}
-\label{others}
-
-These instructions apply to everyone.
-
-\subsection{Citations within the text}
-
-The \verb+natbib+ package will be loaded for you by default.  Citations may be
-author/year or numeric, as long as you maintain internal consistency.  As to the
-format of the references themselves, any style is acceptable as long as it is
-used consistently.
-
-The documentation for \verb+natbib+ may be found at
-\begin{center}
-  \url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-Of note is the command \verb+\citet+, which produces citations appropriate for
-use in inline text.  For example,
-\begin{verbatim}
-   \citet{hasselmo} investigated\dots
-\end{verbatim}
-produces
-\begin{quote}
-  Hasselmo, et al.\ (1995) investigated\dots
-\end{quote}
-
-If you wish to load the \verb+natbib+ package with options, you may add the
-following before loading the \verb+neurips_2019+ package:
-\begin{verbatim}
-   \PassOptionsToPackage{options}{natbib}
-\end{verbatim}
-
-If \verb+natbib+ clashes with another package you load, you can add the optional
-argument \verb+nonatbib+ when loading the style file:
-\begin{verbatim}
-   \usepackage[nonatbib]{neurips_2019}
-\end{verbatim}
-
-As submission is double blind, refer to your own published work in the third
-person. That is, use ``In the previous work of Jones et al.\ [4],'' not ``In our
-previous work [4].'' If you cite your other papers that are not widely available
-(e.g., a journal paper under review), use anonymous author names in the
-citation, e.g., an author of the form ``A.\ Anonymous.''
-
-\subsection{Footnotes}
-
-Footnotes should be used sparingly.  If you do require a footnote, indicate
-footnotes with a number\footnote{Sample of the first footnote.} in the
-text. Place the footnotes at the bottom of the page on which they appear.
-Precede the footnote with a horizontal rule of 2~inches (12~picas).
-
-Note that footnotes are properly typeset \emph{after} punctuation
-marks.\footnote{As in this example.}
-
-\subsection{Figures}
+We show that a fringe case of the neural network architecture corresponds to a standard finite difference stencil, and converges to the expected coefficients.
 
 \begin{figure}
   \centering
@@ -254,33 +186,6 @@ marks.\footnote{As in this example.}
   \caption{Sample figure caption.}
 \end{figure}
 
-All artwork must be neat, clean, and legible. Lines should be dark enough for
-purposes of reproduction. The figure number and caption always appear after the
-figure. Place one line space before the figure caption and one line space after
-the figure. The figure caption should be lower case (except for first word and
-proper nouns); figures are numbered consecutively.
-
-You may use color figures.  However, it is best for the figure captions and the
-paper body to be legible if the paper is printed in either black/white or in
-color.
-
-\subsection{Tables}
-
-All tables must be centered, neat, clean and legible.  The table number and
-title always appear before the table.  See Table~\ref{sample-table}.
-
-Place one line space before the table title, one line space after the
-table title, and one line space after the table. The table title must
-be lower case (except for first word and proper nouns); tables are
-numbered consecutively.
-
-Note that publication-quality tables \emph{do not contain vertical rules.} We
-strongly suggest the use of the \verb+booktabs+ package, which allows for
-typesetting high-quality, professional tables:
-\begin{center}
-  \url{https://www.ctan.org/pkg/booktabs}
-\end{center}
-This package was used to typeset Table~\ref{sample-table}.
 
 \begin{table}
   \caption{Sample table title}
