@@ -15,6 +15,15 @@ class PureStencil(torch.nn.Module):
         )
     def forward(self,x):
         return torch.nn.functional.pad(self.net(x),(1,1))
+  
+class PureLinear(torch.nn.Module):
+    def __init__(self, Nx, width=3):
+        super(PureLinear,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(Nx,Nx-2,bias=False),
+        )
+    def forward(self,x):
+        return torch.nn.functional.pad(self.net(x),(1,1))
     
 class DeepStencil(torch.nn.Module):
     def __init__(self,Nx,width=3):
@@ -122,7 +131,8 @@ class ConditionalDiscriminatorConv(torch.nn.Module):
         return self.net( torch.cat((x,y),dim=1) )
     
 models = {"PureStencil":PureStencil,
-         "DeepStencil":DeepStencil,
+         "PureLinear":PureLinear,
+          "DeepStencil":DeepStencil,
          "FCMLP":FCMLP}
 #
 # Training Utilities
