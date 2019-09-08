@@ -146,9 +146,19 @@ def select_batch_idcs(num, Ntraj,Nt, Npast=1,Nfuture=1):
                             for _ in range(num)])
     return ii
 
+Ntraj_test = 2
+Ntraj_val = 2
 def get_batch(num, dataset, Npast=1, Nfuture=1):
     Ntraj,Nt,Nx = dataset.shape
-    ii = select_batch_idcs(num, Ntraj,Nt)
+    ii = select_batch_idcs(num, Ntraj-Ntraj_test-Ntraj_val, Nt)
+    xx = torch.cat([dataset[j,(t-Npast+1):(t+1),:].unsqueeze(0) for j,t in ii])
+    yy = torch.cat([dataset[j,(t+1):(t+Nfuture+1),:].unsqueeze(0) for j,t in ii])
+    return xx,yy
+
+def test_batch(dataset, Npast=1, Nfuture=1):
+    Ntraj,Nt,Nx = dataset.shape
+    ii = torch.LongTensor([(i,j) for i in range(Ntraj-Ntraj_val-Ntraj_test, Ntraj-Ntraj_val)
+                          for j in range(Nt-Npast-Nfuture+1)])
     xx = torch.cat([dataset[j,(t-Npast+1):(t+1),:].unsqueeze(0) for j,t in ii])
     yy = torch.cat([dataset[j,(t+1):(t+Nfuture+1),:].unsqueeze(0) for j,t in ii])
     return xx,yy
