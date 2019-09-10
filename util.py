@@ -178,7 +178,8 @@ def do_a_path(model, dataset, samp, Nstep=-1):
         Npast = 1
     if Nstep <= 0:
         Nstep = dataset.shape[1]-Npast
-    Nplot = Nstep//10
+    Nplot = max(Nstep//10,1)
+    
     errors = np.zeros((Nstep,))
     with torch.no_grad():
         for i in range(Nstep):
