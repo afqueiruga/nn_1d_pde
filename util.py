@@ -40,6 +40,21 @@ class DeepStencil(torch.nn.Module):
     def forward(self,x):
         return torch.nn.functional.pad(self.net(x),(1,1))
     
+class LeakyDeepStencil(torch.nn.Module):
+    def __init__(self,Nx,width=3):
+        super(LeakyDeepStencil,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Conv1d(1,15,width),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv1d(15,15,1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv1d(15,15,1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv1d(15,1,1)
+        )
+    def forward(self,x):
+        return torch.nn.functional.pad(self.net(x),(1,1))
+    
 class FCMLP(torch.nn.Module):
     def __init__(self, Nx):
         super(FCMLP,self).__init__()
@@ -54,6 +69,22 @@ class FCMLP(torch.nn.Module):
         )
     def forward(self,x):
         return torch.nn.functional.pad(self.net(x),(1,1))
+    
+class LeakyFCMLP(torch.nn.Module):
+    def __init__(self, Nx):
+        super(LeakyFCMLP,self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(Nx,100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,Nx-2)
+        )
+    def forward(self,x):
+        return torch.nn.functional.pad(self.net(x),(1,1))
+    
     
 class AutoencoderFC(torch.nn.Module):
     def __init__(self, Nx):
@@ -133,7 +164,10 @@ class ConditionalDiscriminatorConv(torch.nn.Module):
 models = {"PureStencil":PureStencil,
          "PureLinear":PureLinear,
           "DeepStencil":DeepStencil,
-         "FCMLP":FCMLP}
+          "LeakyDeepStencil":LeakyDeepStencil,
+         "LeakyFCMLP":LeakyFCMLP,
+          "FCMLP":FCMLP
+         }
 #
 # Training Utilities
 #
