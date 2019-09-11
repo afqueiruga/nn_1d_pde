@@ -104,6 +104,14 @@ class AutoencoderConv(torch.nn.Module):
     def forward(self,x):
         return self.net(x)
     
+models = {"PureStencil":PureStencil,
+         "PureLinear":PureLinear,
+          "DeepStencil":DeepStencil,
+          "LeakyDeepStencil":LeakyDeepStencil,
+          "LeakyFCMLP":LeakyFCMLP,
+          "FCMLP":FCMLP
+         }
+    
 class DiscriminatorFC(torch.nn.Module):
     def __init__(self, Nx, width):
         super(DiscriminatorFC,self).__init__()
@@ -160,14 +168,11 @@ class ConditionalDiscriminatorConv(torch.nn.Module):
         
     def forward(self,x,y):
         return self.net( torch.cat((x,y),dim=1) )
+
+discriminators = {
+    "ConditionalConv":ConditionalDiscriminatorConv,
+}
     
-models = {"PureStencil":PureStencil,
-         "PureLinear":PureLinear,
-          "DeepStencil":DeepStencil,
-          "LeakyDeepStencil":LeakyDeepStencil,
-         "LeakyFCMLP":LeakyFCMLP,
-          "FCMLP":FCMLP
-         }
 #
 # Training Utilities
 #
