@@ -13,3 +13,7 @@ We use analytical solutions to generate datasets for the following equations:
 
 The analytical solutions are all included in the `detest` testing framework should you wish to generate more data (or test a PDE solver.)
 
+- train, test, validate
+- multistep
+- unet
+- autoencoder

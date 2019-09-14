@@ -6,7 +6,7 @@
 
 % ready for submission
 \usepackage{neurips_2019}
-
+\usepackage[pdftex]{graphicx}
 % to compile a preprint version, e.g., for submission to arXiv, add add the
 % [preprint] option:
 %     \usepackage[preprint]{neurips_2019}
@@ -142,7 +142,7 @@ A dataset is created for each equation where 10 trajectories are solved analytic
 \subsection{Architectures}
 \begin{figure}
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  \includegraphics[width=5in]{CNN_FDM.png}  
   \caption{Diagrams of the networks.}
 \end{figure}
 
@@ -191,7 +191,7 @@ L\left(u^k,u^{k+1}\right) = \left\| u^{k+1}_i-f(u^k) \right\|_2^2.
 \end{equation}
 The cost function to minimize at each step is $N_{batch}^{-1}\sum_{x,y\in batch} L(y,x)$.
 
-It This effects the network architecture:
+Multiple input steps effects the network architecture:
 \begin{equation}
 L\left(\left\{u^k,u^{k-1}...u^{k-P}\right\},u^{k+1}\right) = \left| u^{k+1}_i-f(u^k,...u^{k-P}) \right|
 \end{equation}
@@ -204,7 +204,7 @@ where $\lambda_i$ are weighting coefficients.
 
 Adverserial training is also considered. A conditional discriminator $D(y|x)$ is optimized which learns, given $x$, determine if $y$ is the datum or the model prediction. For these problems, no stochastic effects are included, and the model and evaluation of the discrimanor are perfectly deterministic. Thus, the inclusion of adverserial is essentially {\em learning a loss function}, replacing the mean-squared-error loss with potentially something better:
 \begin{equation}
-L_D(y,x)= \frac{1}{2}\left(1 - D\left(f(x)|x\right) + D\left(y|x\right)\right)
+L_D(y,x)= \left(1 - D\left(f(x)|x\right) + D\left(y|x\right)\right)/2
 \end{equation}
 \footnote{Averaging this loss function over a batch the same way as the others yields the $\mathbb{E}_x[1-D(f(x))]-\mathbb{E}_y[D(y)]$ equation of traditional GANs, but using ``expected value'' does not quite apply to a fully deterministic model.}
 
@@ -213,7 +213,7 @@ L_D(y,x)= \frac{1}{2}\left(1 - D\left(f(x)|x\right) + D\left(y|x\right)\right)
 The datasets were created using Sympy and are 1.6MB in total. The entire study is implemented in PyTorch. The experiments were designed to run in a few minutes each using a GPU instance on Google Colaboratory. The source code and datasets can be found at https://github.com/{\em hidden for blind review.}
 
 
-\section{Results}
+\section{Heat Equation}
 
 The first sanity check was to derive the $[1,-2,1]$ stencil from the heat equation dataset with a three-parameter CNN.
 Testing the algorithms ADAM, Rprop, and SGD on learning rates of $0.1, 10^{-2}, 10^{-3}, 10^{-4}$, and $10^{-5}$, only ADAM converged to the right answer with $0.1$ and $10^{-2}$. Increasing from single precision to double precision did not change this result. Single precision with a learning rate of $0.1$ was used for the rest of the studies.
@@ -221,12 +221,32 @@ This test also verified that the dataset met the CFL condition by assigning the 
 
 \begin{figure}
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{Convergence of 3-parameter CNN to the expected stencil using L2 optimization, self-feed L2 optimization, and adversarial training.}
+  \includegraphics[width=5in]{3pt_L2_loss.png}
+  \caption{Convergence of 3-parameter CNN to the expected stencil
+    using L2 optimization and adversarial
+    training. $10^{-7}$ error is possibly the best in single precision.}
 \end{figure}
 
+\begin{table}
+  \caption{The convolutional weights learning by the 3 training
+    methods for five randomly initialized runs. The weights are
+    divided by $k \Delta t / \Delta x^2$ to normalize to $1,-2,1$.}
+  \begin{tabular}{rrr|rrr|rrr}
+    \hline
+    &MSE& & &Adversary& & &Both& \\
+\hline
+ 0.997 & -1.995 & 0.997 & 1.398 & -1.149 & 1.401 & 1.073 & -2.149 & 1.077 \\
+ 0.997 & -1.995 & 0.998 & 1.058 & -3.196 & 0.956 & 0.994 & -2.000 & 0.995 \\
+ 0.998 & -1.996 & 0.998 & 1.512 & -0.824 & 1.624 & 0.595 & -1.502 & 0.732 \\
+ 0.998 & -1.994 & 0.999 & 1.084 & -1.154 & 1.116 & 1.000 & -2.001 & 1.000 \\
+ 0.998 & -1.995 & 0.998 & 1.392 & -0.558 & 1.394 & 1.000 & -1.999 & 1.000 \\
+\hline
+\end{tabular}
+  \end{table}
 
-Adverserial training with a learned discriminator is verified to derive the same stencil. The L2 testing loss of both is shown in Figure \ref{fig:l2adverse}. When observing the learned values during training, it was observed that the $[1,-2,1]$ ``shape'' of the stencil was trained quickly, but that it took a longer time to optimize to the magnitude.
+Purely adverserial training with a learned discriminator does not learn the same stencil. It appears that the discriminator only learns the ``parabolic'' shape to it, but not the magnitude. Combining the discriminator loss and L2 loss improve training and converges to the correct stencil with correct magnitude. The L2 testing loss of both is shown in Figure \ref{fig:l2adverse}.
+%When observing the learned values during training, it was observed that the $[1,-2,1]$ ``shape'' of the stencil was trained quickly, but that it took a longer time to optimize to the magnitude.
+These results suggest caution to using a purely GAN-type training for physics problems where accuracy is important. The ability to detect the shape of the operator is promising; the {\em author(s)} hypothesize that the discriminator may help with issues such as stability in more complex systems.
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -235,22 +255,29 @@ We show that a fringe case of CNN architecture corresponds to a standard finite 
 Deep CNNs were successfully derived for solving Burgers' equation accurately {\em and } stably.
 
 
-\subsection{Margins in \LaTeX{}}
 
-Most of the margin problems come from figures positioned by hand using
-\verb+\special+ or other commands. We suggest using the command
-\verb+\includegraphics+ from the \verb+graphicx+ package. Always specify the
-figure width as a multiple of the line width as in the example below:
-\begin{verbatim}
-   \usepackage[pdftex]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.pdf}
-\end{verbatim}
-See Section 4.4 in the graphics bundle documentation
-(\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
+This analogy allows us to interpret the output of our learning algorithms, and guide the design of new architectures for these problems.
+This work hopes to provide a simple, well understood benchmark for proving recently demonstrated ML methods for solving physical systems developing ML methods for solving physical systems (and remaining as a tiny unit test to the codebases!)
+By finding this area of overlap between solving PDEs and deep learning, we can seek to bridge the gap and transfer knowledge between the two fields. For example, can methods for L-stable implicit high-order ODE integration be applied to transformer networks?
 
-A number of width problems arise when \LaTeX{} cannot properly hyphenate a
-line. Please give LaTeX hyphenation hints using the \verb+\-+ command when
-necessary.
+
+
+% \subsection{Margins in \LaTeX{}}
+
+% Most of the margin problems come from figures positioned by hand using
+% \verb+\special+ or other commands. We suggest using the command
+% \verb+\includegraphics+ from the \verb+graphicx+ package. Always specify the
+% figure width as a multiple of the line width as in the example below:
+% \begin{verbatim}
+%    \usepackage[pdftex]{graphicx} ...
+%    \includegraphics[width=0.8\linewidth]{myfile.pdf}
+% \end{verbatim}
+% See Section 4.4 in the graphics bundle documentation
+% (\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
+
+% A number of width problems arise when \LaTeX{} cannot properly hyphenate a
+% line. Please give LaTeX hyphenation hints using the \verb+\-+ command when
+% necessary.
 
 \subsubsection*{Acknowledgments}
 
