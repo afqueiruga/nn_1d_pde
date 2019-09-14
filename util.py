@@ -41,19 +41,21 @@ class DeepStencil(torch.nn.Module):
         return torch.nn.functional.pad(self.net(x),(1,1))
     
 class LeakyDeepStencil(torch.nn.Module):
-    def __init__(self,Nx,width=3):
+    def __init__(self,Nx,width=3,channels=15,depth=3,act="LeakyReLU"):
         super(LeakyDeepStencil,self).__init__()
-        self.net = torch.nn.Sequential(
-            torch.nn.Conv1d(1,15,width),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv1d(15,15,1),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv1d(15,15,1),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv1d(15,1,1)
-        )
+        ActFunc = torch.nn.LeakyReLU
+        layers = [[ torch.nn.Conv1d(1,channels,width),ActFunc() ]] + \
+                 [ [torch.nn.Conv1d(channels,channels,1),ActFunc() ]
+                   for _ in range(depth-1) ] + \
+                 [[ torch.nn.Conv1d(channels,1,1) ]]
+        self.net = torch.nn.Sequential(*[i for l in layers for i in l])
+        self.act = act
+        self.depth = depth
+        self.width = width
+        self.channels = channels
     def forward(self,x):
-        return torch.nn.functional.pad(self.net(x),(1,1))
+        return torch.nn.functional.pad(self.net(x),
+                        (self.width//2,self.width//2))
     
 class FCMLP(torch.nn.Module):
     def __init__(self, Nx):
@@ -189,7 +191,8 @@ Ntraj_test = 2
 Ntraj_val = 2
 def get_batch(num, dataset, Npast=1, Nfuture=1):
     Ntraj,Nt,Nx = dataset.shape
-    ii = select_batch_idcs(num, Ntraj-Ntraj_test-Ntraj_val, Nt)
+    ii = select_batch_idcs(num, Ntraj-Ntraj_test-Ntraj_val, Nt, 
+                           Npast=Npast, Nfuture=Nfuture)
     xx = torch.cat([dataset[j,(t-Npast+1):(t+1),:].unsqueeze(0) for j,t in ii])
     yy = torch.cat([dataset[j,(t+1):(t+Nfuture+1),:].unsqueeze(0) for j,t in ii])
     return xx,yy
