@@ -43,7 +43,12 @@ class DeepStencil(torch.nn.Module):
 class LeakyDeepStencil(torch.nn.Module):
     def __init__(self,Nx,width=3,channels=15,depth=3,act="LeakyReLU"):
         super(LeakyDeepStencil,self).__init__()
-        ActFunc = torch.nn.LeakyReLU
+        ActFuncDict = {
+            "LeakyReLU":torch.nn.LeakyReLU,
+            "ReLU":torch.nn.ReLU,
+            "Tanh":torch.nn.Tanh,
+        }
+        ActFunc = ActFuncDict[act]
         layers = [[ torch.nn.Conv1d(1,channels,width),ActFunc() ]] + \
                  [ [torch.nn.Conv1d(channels,channels,1),ActFunc() ]
                    for _ in range(depth-1) ] + \
@@ -212,7 +217,7 @@ def do_a_path(model, dataset, samp, Nstep=-1):
     u0 = dataset[samp,(0,),:]
     u0 = u0.reshape((1,1,dataset.shape[-1]))
     #u0 = torch.tensor(u0,dtype=torch.float32)
-    plt.figure()
+    #plt.figure()
     plt.plot(u0.cpu().numpy().flatten())
     try:
         Npast = model.Npast
@@ -233,6 +238,25 @@ def do_a_path(model, dataset, samp, Nstep=-1):
             if i%Nplot==Nplot-1:
                 plt.plot(ucpu)
                 plt.plot(dcpu,'--')
-    plt.show()
+    #plt.show()
     return errors
+    
+def do_an_unknown_path(model, u0, Nstep=-1):
+    u0 = u0.reshape((1,1,-1))
+    plt.plot(u0.cpu().numpy().ravel())
+    try:
+        Npast = model.Npast
+    except:
+        Npast = 1
+    if Nstep <= 0:
+        Nstep = 100
+    Nplot = max(Nstep//10,1)
+    with torch.no_grad():
+        for i in range(Nstep):
+            uN = model(u0)
+            u0 += uN
+            ucpu = u0.cpu().numpy().ravel()
+            if i%Nplot==Nplot-1:
+                plt.plot(ucpu)
+    return None
     
