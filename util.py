@@ -47,6 +47,8 @@ class LeakyDeepStencil(torch.nn.Module):
             "LeakyReLU":torch.nn.LeakyReLU,
             "ReLU":torch.nn.ReLU,
             "Tanh":torch.nn.Tanh,
+            "Sigmoid":torch.nn.Sigmoid,
+            "CELU":torch.nn.CELU,
         }
         ActFunc = ActFuncDict[act]
         layers = [[ torch.nn.Conv1d(1,channels,width),ActFunc() ]] + \
@@ -234,6 +236,9 @@ def do_a_path(model, dataset, samp, Nstep=-1):
             u0 += uN
             ucpu = u0.cpu().numpy().ravel()
             dcpu = dataset[samp,i+1,:].cpu().numpy().ravel()
+            # Apply BCs
+            u0[0,0,0] = dataset[samp,i+1,0]
+            u0[0,0,-1] = dataset[samp,i+1,-1]
             errors[i] = np.linalg.norm((ucpu - dcpu)/(np.abs(dcpu)+1.0e-5))
             if i%Nplot==Nplot-1:
                 plt.plot(ucpu)
