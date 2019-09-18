@@ -1,0 +1,79 @@
+\begin{thebibliography}{11}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bar-Sinai et~al.()Bar-Sinai, Hoyer, Hickey, and
+  Brenner]{bar-sinai_data-driven_2018}
+Yohai Bar-Sinai, Stephan Hoyer, Jason Hickey, and Michael~P Brenner.
+\newblock Data-driven discretization: a method for systematic coarse graining
+  of partial differential equations.
+
+\bibitem[Chang et~al.()Chang, Meng, Haber, Tung, and
+  Begert]{chang_multi-level_2017}
+Bo~Chang, Lili Meng, Eldad Haber, Frederick Tung, and David Begert.
+\newblock Multi-level residual networks from dynamical systems view.
+
+\bibitem[Chen et~al.()Chen, Rubanova, Bettencourt, and
+  Duvenaud]{chen_neural_2018}
+Tian~Qi Chen, Yulia Rubanova, Jesse Bettencourt, and David~K. Duvenaud.
+\newblock Neural ordinary differential equations.
+\newblock abs/1806.07366.
+\newblock URL \url{http://arxiv.org/abs/1806.07366}.
+
+\bibitem[Godunov()]{godunov_difference_1959}
+Sergei~Konstantinovich Godunov.
+\newblock A difference method for numerical calculation of discontinuous
+  solutions of the equations of hydrodynamics.
+\newblock 89\penalty0 (3):\penalty0 271--306.
+
+\bibitem[{LeVeque}()]{leveque_finite_2007}
+Randall~J {LeVeque}.
+\newblock \emph{Finite difference methods for ordinary and partial differential
+  equations: steady-state and time-dependent problems}, volume~98.
+\newblock Siam.
+
+\bibitem[Ulyanov et~al.()Ulyanov, Vedaldi, and Lempitsky]{ulyanov_deep_2018}
+Dmitry Ulyanov, Andrea Vedaldi, and Victor Lempitsky.
+\newblock Deep image prior.
+\newblock In \emph{Proceedings of the {IEEE} Conference on Computer Vision and
+  Pattern Recognition}, pages 9446--9454.
+
+\bibitem[Vlachas et~al.()Vlachas, Byeon, Wan, Sapsis, and
+  Koumoutsakos]{vlachas_data-driven_2018}
+Pantelis~R Vlachas, Wonmin Byeon, Zhong~Y Wan, Themistoklis~P Sapsis, and
+  Petros Koumoutsakos.
+\newblock Data-driven forecasting of high-dimensional chaotic systems with long
+  short-term memory networks.
+\newblock 474\penalty0 (2213):\penalty0 20170844.
+
+\bibitem[Werhahn et~al.()Werhahn, Xie, Chu, and
+  Thuerey]{werhahn_multi-pass_2019}
+Maximilian Werhahn, You Xie, Mengyu Chu, and Nils Thuerey.
+\newblock A multi-pass {GAN} for fluid flow super-resolution.
+\newblock URL \url{http://arxiv.org/abs/1906.01689}.
+
+\bibitem[Wu et~al.()Wu, Kashinath, Albert, Prabhat, and
+  Xiao]{wu_physics-informed_2018}
+J.~Wu, K.~Kashinath, A.~Albert, M.~Prabhat, and H.~Xiao.
+\newblock Physics-informed generative learning to emulate unresolved physics in
+  climate models.
+
+\bibitem[Xie et~al.()Xie, Franz, Chu, and Thuerey]{xie_tempogan:_2018}
+You Xie, Erik Franz, Mengyu Chu, and Nils Thuerey.
+\newblock tempogan: A temporally coherent, volumetric gan for super-resolution
+  fluid flow.
+\newblock 37\penalty0 (4):\penalty0 95.
+
+\bibitem[Zador()]{zador_critique_2019}
+Anthony~M. Zador.
+\newblock A critique of pure learning and what artificial neural networks can
+  learn from animal brains.
+\newblock 10\penalty0 (1):\penalty0 3770.
+\newblock ISSN 2041-1723.
+\newblock \doi{10.1038/s41467-019-11786-6}.
+\newblock URL \url{https://doi.org/10.1038/s41467-019-11786-6}.
+
+\end{thebibliography}
