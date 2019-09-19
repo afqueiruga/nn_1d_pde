@@ -8,9 +8,9 @@ We can design neural networks that look like existing numerical models:
 
 ![networks](paper/CNN_FDM.png)
 
-and there's opportunity to use them to learn better complicated numerical schemes than we can design by hand. However, I'm not fully confident that they'd gives us exactly the right answer, so I tested that out on the easiest problems I could find.
+and there's opportunity to use them to learn complicated numerical schemes that are better than we can design by hand. However, I'm not sure what are the bounds on learning physically meaningful patterns, so I tested that out on the easiest problems I could find.
 
-The initial work was submitted to the machine learning and physical sciences workshop at NeurIPS. The paper can be found under (paper/neurips_2019.tex)[paper/neurips_2019.tex]. Expanding to the other papers
+The initial work was submitted to a conference workshop with the title "Studying Shallow and Deep Convolutional Neural Networks as Learned Numerical Schemes on the 1D Heat Equation and Burgers' Equation". The paper source can be found under [paper/neurips_2019.tex](paper/neurips_2019.tex) or [the preprint on arxiv](https://arxiv.org/abs/1909.08142). The tag "submission2019" reflect the state of the repository for that submission; this code is still under active research.
 
 ## Methodology
 
@@ -26,7 +26,7 @@ We use analytical solutions to generate datasets for the following equations:
 The code to make the datasets is [analytical_solutions.ipynb](analytical_solutions.ipynb), and the outputs are .npz files in [data/](data).
 Most of the analytical solutions are taken in the `detest` testing framework should you wish to generate more data (or test a PDE solver.) 
 
-## Hypotheses:
+## Hypothesis testing in progress:
 
 1. The 3-parameter convolution layer will learn the expected weights
    with standard training techniques. **true**
